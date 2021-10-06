@@ -74,23 +74,45 @@ func getHistory(m map[string]string, n int) {
 	}
 }
 
-func parse(m map[string]string, c map[string]int, cs *[]Count) {
-	// 计数
+func parse(m map[string]string, cf map[string]int, cb map[string]int, f *[]Count, b *[]Count) {
+	// 计数并排序
 	for _, values := range m {
 		arr := strings.Split(values, " ")
-		for _, v := range arr {
-			if _, ok := c[string(v)]; ok {
-				c[string(v)] += 1
+
+		for _, v := range arr[:5] {
+			if _, ok := cf[string(v)]; ok {
+				cf[string(v)] += 1
 			} else {
-				c[string(v)] = 1
+				cf[string(v)] = 1
+			}
+		}
+		for _, v := range arr[5:] {
+			if _, ok := cb[string(v)]; ok {
+				cb[string(v)] += 1
+			} else {
+				cb[string(v)] = 1
 			}
 		}
 	}
+	assort(cf, f)
+	assort(cb, b)
+
+}
+
+func assort(c map[string]int, f *[]Count) {
+	// 通过map生成排序后的列表
 
 	for k, v := range c {
-		*cs = append(*cs, Count{k, v})
+		*f = append(*f, Count{k, v})
 	}
-
+	fs := CsSort{
+		CountList: *f,
+		less: func(x, y Count) bool {
+			return x.Value > y.Value
+		},
+	}
+	sort.Sort(fs)
+	*f = fs.CountList
 }
 
 type Count struct {
@@ -120,25 +142,33 @@ func main() {
 	myWin := myApp.NewWindow("标题")
 
 	sMap := make(map[string]string)
-	conMap := make(map[string]int)
-	csList := make([]Count, 0)
+	fMap := make(map[string]int)
+	bMap := make(map[string]int)
+	frontList := make([]Count, 0)
+	backList := make([]Count, 0)
 	// 查询历史记录并
-	getHistory(sMap, 100)
-	parse(sMap, conMap, &csList)
+	getHistory(sMap, 3)
+	parse(sMap, fMap, bMap, &frontList, &backList)
 
-	//fmt.Println("排序前：",csList)
+	//fmt.Println("sMap:", sMap)
+	//fmt.Println("frontList:", frontList)
+	//fmt.Println("backList:", backList)
 
-	cs := CsSort{
-		CountList: csList,
-		less: func(x, y Count) bool {
-			return x.Value > y.Value
+	var data = [][]string{[]string{"top left", "top right"}, []string{"bottom left", "bottom right"}}
+
+	historyList := widget.NewTable(
+		func() (int, int) {
+			return len(data), len(data[0])
 		},
-	}
-	sort.Sort(cs)
-	//fmt.Println("排序后：",cs.CountList)
+		func() fyne.CanvasObject {
+			return widget.NewLabel("wide content")
+		},
+		func(i widget.TableCellID, o fyne.CanvasObject) {
+			o.(*widget.Label).SetText(data[i.Row][i.Col])
+		})
 
 	tabs := container.NewAppTabs(
-		container.NewTabItem("历史记录", widget.NewLabel("Hello")),
+		container.NewTabItem("历史记录", historyList),
 		container.NewTabItem("分布统计", widget.NewLabel("World!")),
 	)
 	tabs.SetTabLocation(container.TabLocationTop)
