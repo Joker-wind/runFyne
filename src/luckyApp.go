@@ -5,6 +5,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"github.com/flopp/go-findfont"
 	"github.com/thedevsaddam/gojsonq"
@@ -109,7 +110,10 @@ func assort(c map[string]int, f *[]Count) {
 	fs := CsSort{
 		CountList: *f,
 		less: func(x, y Count) bool {
-			return x.Value > y.Value
+			// 按照key升序
+			return strings.Compare(x.Key, y.Key) < 0
+			// 按照value升序
+			//return x.Value < y.Value
 		},
 	}
 	sort.Sort(fs)
@@ -140,20 +144,20 @@ func (c CsSort) Swap(i, j int) {
 
 func main() {
 	myApp := app.New()
-	myWin := myApp.NewWindow("标题")
+	myWin := myApp.NewWindow("透乐大")
 
 	sMap := make([][]string, 0)
 	fMap := make(map[string]int)
 	bMap := make(map[string]int)
 	frontList := make([]Count, 0)
 	backList := make([]Count, 0)
-	// 查询历史记录并
-	getHistory(&sMap, 100)
+	// 查询记录数
+	n := 100
+	getHistory(&sMap, n)
 	parse(&sMap, fMap, bMap, &frontList, &backList)
 
-	//fmt.Println("sMap:", sMap)
-	//fmt.Println("frontList:", frontList)
-	//fmt.Println("backList:", backList)
+	log.Println(frontList)
+	log.Println(backList)
 
 	historyList := widget.NewTable(
 		func() (int, int) {
@@ -165,12 +169,42 @@ func main() {
 		func(i widget.TableCellID, o fyne.CanvasObject) {
 			o.(*widget.Label).SetText(sMap[i.Row][i.Col])
 		})
+	historyList.SetColumnWidth(1, 170)
 
-	fmt.Sprintln(historyList.Size())
+	content := container.NewVBox()
+	content.Add(widget.NewLabel(fmt.Sprintf("以下数据统计号码在最近%d期的占比（0~%d）", n, n)))
+
+	content.Add(widget.NewLabel("前区号码"))
+	ct1 := container.New(layout.NewGridLayout(6))
+	for _, v := range frontList {
+		ct := container.NewHBox()
+		bar := widget.NewProgressBar()
+		bar.Min = 0
+		bar.Max = float64(n)
+		bar.Value = float64(v.Value)
+		ct.Add(widget.NewLabel(v.Key))
+		ct.Add(bar)
+		ct1.Add(ct)
+	}
+	content.Add(ct1)
+
+	content.Add(widget.NewLabel("后区号码"))
+	ct2 := container.New(layout.NewGridLayout(6))
+	for _, v := range backList {
+		ct := container.NewHBox()
+		bar := widget.NewProgressBar()
+		bar.Min = 0
+		bar.Max = float64(n)
+		bar.Value = float64(v.Value)
+		ct.Add(widget.NewLabel(v.Key))
+		ct.Add(bar)
+		ct2.Add(ct)
+	}
+	content.Add(ct2)
 
 	tabs := container.NewAppTabs(
 		container.NewTabItem("历史记录", historyList),
-		container.NewTabItem("分布统计", widget.NewLabel("World!")),
+		container.NewTabItem("分布统计", content),
 	)
 	tabs.SetTabLocation(container.TabLocationTop)
 
