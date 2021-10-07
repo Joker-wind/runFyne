@@ -33,7 +33,7 @@ func init() {
 	}
 }
 
-func getHistory(m map[string]string, n int) {
+func getHistory(m *[][]string, n int) {
 	// 获取历史记录
 	client := &http.Client{
 		Timeout: time.Second * 3,
@@ -69,16 +69,17 @@ func getHistory(m map[string]string, n int) {
 		//e的类型和值：map[string]interface {},map[lotteryDrawNum:21112 lotteryDrawResult:18 21 22 23 35 11 12]
 		Num := e.(map[string]interface{})["lotteryDrawNum"].(string)
 		Result := e.(map[string]interface{})["lotteryDrawResult"].(string)
+		cu := []string{Num, Result}
 		//fmt.Println(Num, Result)
-		m[Num] = Result
+		*m = append(*m, cu)
 	}
 }
 
-func parse(m map[string]string, cf map[string]int, cb map[string]int, f *[]Count, b *[]Count) {
+func parse(m *[][]string, cf map[string]int, cb map[string]int, f *[]Count, b *[]Count) {
 	// 计数并排序
-	for _, values := range m {
-		arr := strings.Split(values, " ")
-
+	for _, values := range *m {
+		num := values[1]
+		arr := strings.Split(num, " ")
 		for _, v := range arr[:5] {
 			if _, ok := cf[string(v)]; ok {
 				cf[string(v)] += 1
@@ -141,31 +142,31 @@ func main() {
 	myApp := app.New()
 	myWin := myApp.NewWindow("标题")
 
-	sMap := make(map[string]string)
+	sMap := make([][]string, 0)
 	fMap := make(map[string]int)
 	bMap := make(map[string]int)
 	frontList := make([]Count, 0)
 	backList := make([]Count, 0)
 	// 查询历史记录并
-	getHistory(sMap, 3)
-	parse(sMap, fMap, bMap, &frontList, &backList)
+	getHistory(&sMap, 100)
+	parse(&sMap, fMap, bMap, &frontList, &backList)
 
 	//fmt.Println("sMap:", sMap)
 	//fmt.Println("frontList:", frontList)
 	//fmt.Println("backList:", backList)
 
-	var data = [][]string{[]string{"top left", "top right"}, []string{"bottom left", "bottom right"}}
-
 	historyList := widget.NewTable(
 		func() (int, int) {
-			return len(data), len(data[0])
+			return len(sMap), 2
 		},
 		func() fyne.CanvasObject {
 			return widget.NewLabel("wide content")
 		},
 		func(i widget.TableCellID, o fyne.CanvasObject) {
-			o.(*widget.Label).SetText(data[i.Row][i.Col])
+			o.(*widget.Label).SetText(sMap[i.Row][i.Col])
 		})
+
+	fmt.Sprintln(historyList.Size())
 
 	tabs := container.NewAppTabs(
 		container.NewTabItem("历史记录", historyList),
