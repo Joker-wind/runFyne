@@ -11,6 +11,7 @@ import (
 	"github.com/thedevsaddam/gojsonq"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"sort"
@@ -142,6 +143,52 @@ func (c CsSort) Swap(i, j int) {
 	c.CountList[i], c.CountList[j] = c.CountList[j], c.CountList[i]
 }
 
+func getRandom(f []Count, b []Count) (result string) {
+	// 完全随机
+	fStr := make([]string, 0)
+	bStr := make([]string, 0)
+	rand.Seed(time.Now().UnixNano())
+	// 生成前区5个号码
+	for len(fStr) < 5 {
+		a := rand.Intn(35)
+		// true表示添加
+		status := true
+		for _, v := range fStr {
+			if v == f[a].Key {
+				// 有重复则不添加
+				status = false
+			}
+		}
+		if status {
+			fStr = append(fStr, f[a].Key)
+		}
+	}
+	// 生成后区2个号码
+	for len(bStr) < 2 {
+		c := rand.Intn(12)
+		// true表示添加
+		status := true
+		for _, v := range bStr {
+			if v == b[c].Key {
+				// 有重复则不添加
+				status = false
+			}
+		}
+		if status {
+			bStr = append(bStr, b[c].Key)
+		}
+	}
+	// 字符串升序
+	sort.Slice(fStr, func(i, j int) bool {
+		return strings.Compare(fStr[i], fStr[j]) < 0
+	})
+	sort.Slice(bStr, func(i, j int) bool {
+		return strings.Compare(fStr[i], fStr[j]) < 0
+	})
+	result = strings.Join(fStr, " ") + " " + strings.Join(bStr, " ")
+	return result
+}
+
 func main() {
 	myApp := app.New()
 	myWin := myApp.NewWindow("透乐大")
@@ -156,9 +203,16 @@ func main() {
 	getHistory(&sMap, n)
 	parse(&sMap, fMap, bMap, &frontList, &backList)
 
-	log.Println(frontList)
-	log.Println(backList)
+	// 菜单
+	menuItem := fyne.NewMenuItem("别点", func() {
+		nt := fyne.NewNotification("警告", "你已经被包围了！请放下服务器！")
+		myApp.SendNotification(nt)
+	})
+	menu := fyne.NewMenu("菜单", menuItem)
+	mainMenu := fyne.NewMainMenu(menu)
+	myWin.SetMainMenu(mainMenu)
 
+	// 展示历史记录
 	historyList := widget.NewTable(
 		func() (int, int) {
 			return len(sMap), 2
@@ -171,6 +225,7 @@ func main() {
 		})
 	historyList.SetColumnWidth(1, 170)
 
+	// 展示分布统计
 	content := container.NewVBox()
 	content.Add(widget.NewLabel(fmt.Sprintf("以下数据统计号码在最近%d期的占比（0~%d）", n, n)))
 
@@ -202,17 +257,33 @@ func main() {
 	}
 	content.Add(ct2)
 
+	// 随机号码
+	random := container.NewVBox()
+	randText := widget.NewTextGrid()
+	randBtn := widget.NewButton("生成号码", func() {
+		randText.SetText(getRandom(frontList, backList))
+	})
+	random.Add(randBtn)
+	random.Add(randText)
+
+	// 将容器加入tabs
 	tabs := container.NewAppTabs(
 		container.NewTabItem("历史记录", historyList),
 		container.NewTabItem("分布统计", content),
+		container.NewTabItem("随机号码", random),
 	)
-	tabs.SetTabLocation(container.TabLocationTop)
+	tabs.SetTabLocation(container.TabLocationLeading)
 
 	myWin.SetContent(tabs)
 	myWin.Resize(fyne.NewSize(800, 600))
 	myWin.ShowAndRun()
 
-	if err := os.Unsetenv("FYNE_FONT"); err != nil {
-		log.Println("取消字体全局变量异常")
-	}
+	//if err := os.Unsetenv("FYNE_FONT"); err != nil {
+	//	log.Println("取消字体全局变量异常")
+	//}
+	defer func() {
+		if err := os.Unsetenv("FYNE_FONT"); err != nil {
+			log.Println("取消字体全局变量异常")
+		}
+	}()
 }
