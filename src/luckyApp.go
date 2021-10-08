@@ -156,9 +156,18 @@ func main() {
 	getHistory(&sMap, n)
 	parse(&sMap, fMap, bMap, &frontList, &backList)
 
-	log.Println(frontList)
-	log.Println(backList)
+	// 菜单
+	menuItem := fyne.NewMenuItem("别点", func() {
+		nt := fyne.NewNotification("警告", "你已经被包围了！请放下服务器！")
+		myApp.SendNotification(nt)
+	})
+	menu := fyne.NewMenu("菜单", menuItem)
+	mainMenu := fyne.NewMainMenu(menu)
+	myWin.SetMainMenu(mainMenu)
 
+	//log.Println(frontList)
+	//log.Println(backList)
+	// 展示历史记录
 	historyList := widget.NewTable(
 		func() (int, int) {
 			return len(sMap), 2
@@ -171,6 +180,7 @@ func main() {
 		})
 	historyList.SetColumnWidth(1, 170)
 
+	// 展示分布统计
 	content := container.NewVBox()
 	content.Add(widget.NewLabel(fmt.Sprintf("以下数据统计号码在最近%d期的占比（0~%d）", n, n)))
 
@@ -202,11 +212,12 @@ func main() {
 	}
 	content.Add(ct2)
 
+	// 将容器加入tabs
 	tabs := container.NewAppTabs(
 		container.NewTabItem("历史记录", historyList),
 		container.NewTabItem("分布统计", content),
 	)
-	tabs.SetTabLocation(container.TabLocationTop)
+	tabs.SetTabLocation(container.TabLocationLeading)
 
 	myWin.SetContent(tabs)
 	myWin.Resize(fyne.NewSize(800, 600))
