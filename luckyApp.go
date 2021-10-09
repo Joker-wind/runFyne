@@ -183,6 +183,7 @@ func getRandom(f []Count, b []Count, index int) (result string) {
 	return result
 }
 
+//打包命令：fyne package -os windows -icon lucky.png
 func main() {
 	myApp := app.New()
 	myWin := myApp.NewWindow("透乐大")
