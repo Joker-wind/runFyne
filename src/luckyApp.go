@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -143,49 +144,42 @@ func (c CsSort) Swap(i, j int) {
 	c.CountList[i], c.CountList[j] = c.CountList[j], c.CountList[i]
 }
 
-func getRandom(f []Count, b []Count) (result string) {
+func getRandom(f []Count, b []Count, index int) (result string) {
 	// 完全随机
-	fStr := make([]string, 0)
-	bStr := make([]string, 0)
+	newF := make([]Count, len(f))
+	newB := make([]Count, len(b))
+	copy(newF, f)
+	copy(newB, b)
+	result = ""
 	rand.Seed(time.Now().UnixNano())
-	// 生成前区5个号码
-	for len(fStr) < 5 {
-		a := rand.Intn(35)
-		// true表示添加
-		status := true
-		for _, v := range fStr {
-			if v == f[a].Key {
-				// 有重复则不添加
-				status = false
+	for i := 0; i < index; i++ {
+		fStr := make([]string, 0)
+		bStr := make([]string, 0)
+		// 生成前区5个号码
+		for len(fStr) < 5 {
+			a := rand.Intn(len(newF))
+			fStr = append(fStr, newF[a].Key)
+			newF = append(newF[:a], newF[a+1:]...)
+		}
+		// 生成后区2个号码
+		for len(bStr) < 2 {
+			if len(newB) == 0 {
+				newB = make([]Count, len(b))
+				copy(newB, b)
 			}
+			c := rand.Intn(len(newB))
+			bStr = append(bStr, newB[c].Key)
+			newB = append(newB[:c], newB[c+1:]...)
 		}
-		if status {
-			fStr = append(fStr, f[a].Key)
-		}
+		// 字符串升序
+		sort.Slice(fStr, func(i, j int) bool {
+			return strings.Compare(fStr[i], fStr[j]) < 0
+		})
+		sort.Slice(bStr, func(i, j int) bool {
+			return strings.Compare(bStr[i], bStr[j]) < 0
+		})
+		result += " " + strings.Join(fStr, " ") + " " + strings.Join(bStr, " ") + "\n"
 	}
-	// 生成后区2个号码
-	for len(bStr) < 2 {
-		c := rand.Intn(12)
-		// true表示添加
-		status := true
-		for _, v := range bStr {
-			if v == b[c].Key {
-				// 有重复则不添加
-				status = false
-			}
-		}
-		if status {
-			bStr = append(bStr, b[c].Key)
-		}
-	}
-	// 字符串升序
-	sort.Slice(fStr, func(i, j int) bool {
-		return strings.Compare(fStr[i], fStr[j]) < 0
-	})
-	sort.Slice(bStr, func(i, j int) bool {
-		return strings.Compare(fStr[i], fStr[j]) < 0
-	})
-	result = strings.Join(fStr, " ") + " " + strings.Join(bStr, " ")
 	return result
 }
 
@@ -260,9 +254,22 @@ func main() {
 	// 随机号码
 	random := container.NewVBox()
 	randText := widget.NewTextGrid()
+	randEntry := widget.NewEntry()
+	randEntry.SetPlaceHolder("请输入数字1~7")
 	randBtn := widget.NewButton("生成号码", func() {
-		randText.SetText(getRandom(frontList, backList))
+		text := randEntry.Text
+		fmt.Println(text)
+		n, _ := strconv.ParseInt(text, 10, 0)
+		if text == "" {
+			n = 7
+		}
+		if n <= 0 || n > 7 {
+			randEntry.SetPlaceHolder("请输入数字1~7")
+		} else {
+			randText.SetText(getRandom(frontList, backList, int(n)))
+		}
 	})
+	random.Add(randEntry)
 	random.Add(randBtn)
 	random.Add(randText)
 
@@ -278,9 +285,6 @@ func main() {
 	myWin.Resize(fyne.NewSize(800, 600))
 	myWin.ShowAndRun()
 
-	//if err := os.Unsetenv("FYNE_FONT"); err != nil {
-	//	log.Println("取消字体全局变量异常")
-	//}
 	defer func() {
 		if err := os.Unsetenv("FYNE_FONT"); err != nil {
 			log.Println("取消字体全局变量异常")
