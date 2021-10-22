@@ -6,6 +6,7 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/flopp/go-findfont"
 	"github.com/thedevsaddam/gojsonq"
@@ -183,6 +184,15 @@ func getRandom(f []Count, b []Count, index int) (result string) {
 	return result
 }
 
+func setTheme(ty string, A fyne.App) {
+	// 设置主题模式
+	if ty == "Light" {
+		A.Settings().SetTheme(theme.LightTheme())
+	} else {
+		A.Settings().SetTheme(theme.DarkTheme())
+	}
+}
+
 //打包命令：fyne package -os windows -icon lucky.png
 func main() {
 	myApp := app.New()
@@ -199,12 +209,16 @@ func main() {
 	parse(&sMap, fMap, bMap, &frontList, &backList)
 
 	// 菜单
-	menuItem := fyne.NewMenuItem("别点", func() {
-		nt := fyne.NewNotification("警告", "你已经被包围了！请放下服务器！")
-		myApp.SendNotification(nt)
+	themeLight := fyne.NewMenuItem("Light", func() {
+		setTheme("Light", myApp)
 	})
-	menu := fyne.NewMenu("菜单", menuItem)
-	mainMenu := fyne.NewMainMenu(menu)
+	themeDark := fyne.NewMenuItem("Dark", func() {
+		setTheme("Dark", myApp)
+	})
+	setting := fyne.NewMenuItem("设置", nil)
+	menuMain := fyne.NewMenu("菜单", setting)
+	menuSet := fyne.NewMenu("主题", themeLight, themeDark)
+	mainMenu := fyne.NewMainMenu(menuMain, menuSet)
 	myWin.SetMainMenu(mainMenu)
 
 	// 展示历史记录
