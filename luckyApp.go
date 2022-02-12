@@ -373,9 +373,8 @@ func selectRandom(f, b map[string]int, fa, ba []string) string {
 		bStr := make([]string, 0)
 		// fn刚好5个时直接就是前区号码
 		if fn == 5 {
-			fStr = fList
-			copy(fStr, fList)
-			fList = []string{}
+			fStr = append(fStr, fList...)
+			fList, fAll = rmList(fList, fAll)
 		} else if fn < 5 {
 			// 先加选中数组
 			fStr = append(fStr, fList...)
@@ -390,7 +389,7 @@ func selectRandom(f, b map[string]int, fa, ba []string) string {
 		} else if fn > 5 {
 			resF := make([]string, 0)
 			bakF := make([]string, 0)
-			copy(bakF, fList)
+			bakF = append(bakF, fList...)
 			bakF, fAll = rmList(bakF, fAll)
 			resF, fList = randomList(5, fList)
 			fStr = append(fStr, resF...)
@@ -401,9 +400,8 @@ func selectRandom(f, b map[string]int, fa, ba []string) string {
 		}
 		// bn刚好2个时直接就是后区号码
 		if bn == 2 {
-			bStr = bList
-			copy(bStr, bList)
-			bList = []string{}
+			bStr = append(bStr, bList...)
+			bList, bAll = rmList(bList, bAll)
 		} else if bn < 2 {
 			bStr = append(bStr, bList...)
 			bList, bAll = rmList(bList, bAll)
@@ -413,7 +411,7 @@ func selectRandom(f, b map[string]int, fa, ba []string) string {
 		} else if bn > 2 {
 			resB := make([]string, 0)
 			bakB := make([]string, 0)
-			copy(bakB, bList)
+			bakB = append(bakB, bList...)
 			bakB, bAll = rmList(bakB, bAll)
 			resB, bList = randomList(2, bList)
 			bStr = append(bStr, resB...)
